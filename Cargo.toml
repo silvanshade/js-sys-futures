@@ -7,6 +7,7 @@ license = "Apache-2.0 WITH LLVM-exception"
 readme = "README.md"
 repository = "https://github.com/hvithrafn/js-sys-futures"
 description = """
+Utilities for working with the futures and js-sys crates.
 """
 
 [badges]
