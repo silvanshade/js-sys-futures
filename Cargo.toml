@@ -23,7 +23,6 @@ anyhow = "1.0"
 bytes = "1.0"
 futures-core = "0.3"
 futures-util = { version = "0.3", features = ["io"] }
-futures = { package = "futures-lite", version = "1.11" }
 js-sys = "0.3"
 wasm-bindgen = { version = "=0.2.70", features = ["strict-macro"] }
 wasm-bindgen-futures = "0.4"
