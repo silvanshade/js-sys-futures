@@ -15,6 +15,7 @@ pub struct JsStream<T: Unpin + JsCast> {
 }
 
 impl<T: Unpin + JsCast> JsStream<T> {
+    /// The inner [`js_sys::AsyncIterator`] is expected to yield values of type `T`.
     pub fn new(inner: AsyncIterator) -> Result<Self, JsValue> {
         let next = JsFuture::from(inner.next()?);
         let phantom = std::marker::PhantomData;

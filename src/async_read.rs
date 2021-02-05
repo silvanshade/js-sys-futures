@@ -17,6 +17,8 @@ pub struct JsAsyncRead {
 }
 
 impl JsAsyncRead {
+    /// The inner [`js_sys::AsyncIterator`] is expected to yield values of type
+    /// [`js_sys::Uint8Array`].
     pub fn new(inner: AsyncIterator) -> Result<Self, JsValue> {
         let next = JsFuture::from(inner.next()?);
         let data = Default::default();
