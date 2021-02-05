@@ -45,7 +45,7 @@ impl JsAsyncRead {
                     if iterator_next.done() {
                         Ok(Poll::Ready(Ok(0)))
                     } else {
-                        let value = iterator_next.value().unchecked_into::<Uint8Array>().to_vec();
+                        let value = iterator_next.value().dyn_into::<Uint8Array>()?.to_vec();
                         this.data = Cursor::new(value);
                         match this.inner.next() {
                             Ok(promise) => {

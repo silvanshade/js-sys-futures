@@ -31,7 +31,7 @@ impl<T: Unpin + JsCast> JsStream<T> {
                 if iterator_next.done() {
                     Ok(Poll::Ready(None))
                 } else {
-                    let value = iterator_next.value().unchecked_into::<T>();
+                    let value = iterator_next.value().dyn_into::<T>()?;
                     match this.inner.next() {
                         Ok(promise) => {
                             this.next = JsFuture::from(promise);
