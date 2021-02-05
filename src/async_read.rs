@@ -72,7 +72,7 @@ impl JsAsyncRead {
                                 return Err(error);
                             },
                         }
-                        cx.waker().clone().wake();
+                        cx.waker().wake_by_ref();
                         Ok(Poll::Pending)
                     }
                 },
