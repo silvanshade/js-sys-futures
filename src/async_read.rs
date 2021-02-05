@@ -1,7 +1,7 @@
 use bytes::BufMut;
 use futures_core::Future;
 use futures_util::io::{self, AsyncBufRead, Cursor};
-use js_sys::{AsyncIterator, IteratorNext, Uint8Array};
+use js_sys::{AsyncIterator, IteratorNext, JsString, Uint8Array};
 use std::{
     convert::TryFrom,
     pin::Pin,
@@ -18,7 +18,7 @@ pub struct JsAsyncRead {
 
 impl JsAsyncRead {
     /// The inner [`js_sys::AsyncIterator`] is expected to yield values of type
-    /// [`js_sys::Uint8Array`].
+    /// [`js_sys::JsString`] or [`js_sys::Uint8Array`].
     pub fn new(inner: AsyncIterator) -> Result<Self, JsValue> {
         let next = JsFuture::from(inner.next()?);
         let data = Default::default();
@@ -47,7 +47,22 @@ impl JsAsyncRead {
                     if iterator_next.done() {
                         Ok(Poll::Ready(Ok(0)))
                     } else {
-                        let value = iterator_next.value().dyn_into::<Uint8Array>()?.to_vec();
+                        let value = {
+                            let next_value = iterator_next.value();
+                            if Uint8Array::instanceof(&next_value) {
+                                Ok(next_value.unchecked_into::<Uint8Array>().to_vec())
+                            } else if next_value.is_string() {
+                                if let Some(string) = next_value.unchecked_into::<JsString>().as_string() {
+                                    Ok(string.into_bytes())
+                                } else {
+                                    Err(js_sys::Error::new("Error converting JsString to String"))
+                                }
+                            } else {
+                                Err(js_sys::Error::new(
+                                    "Inner AsyncIterator must produce a JsString or Uint8Array",
+                                ))
+                            }
+                        }?;
                         this.data = Cursor::new(value);
                         match this.inner.next() {
                             Ok(promise) => {
