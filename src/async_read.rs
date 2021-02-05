@@ -1,8 +1,9 @@
 use bytes::BufMut;
 use futures_core::Future;
 use futures_util::io::{self, AsyncBufRead, Cursor};
-use js_sys::{AsyncIterator, Boolean, Reflect, Uint8Array};
+use js_sys::{AsyncIterator, IteratorNext, Uint8Array};
 use std::{
+    convert::TryFrom,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -16,8 +17,8 @@ pub struct JsAsyncRead {
 }
 
 impl JsAsyncRead {
-    pub fn new(inner: AsyncIterator) -> anyhow::Result<Self> {
-        let next = JsFuture::from(inner.next().map_err(AsyncReadableError)?);
+    pub fn new(inner: AsyncIterator) -> Result<Self, JsValue> {
+        let next = JsFuture::from(inner.next()?);
         let data = Default::default();
         Ok(Self { inner, next, data })
     }
@@ -40,13 +41,11 @@ impl JsAsyncRead {
             let status = next.poll(cx)?;
             match status {
                 Poll::Ready(object) => {
-                    let done = Reflect::get(&object, &"done".into())?;
-                    let done = done.unchecked_into::<Boolean>().value_of();
-                    if done {
+                    let iterator_next = object.unchecked_into::<IteratorNext>();
+                    if iterator_next.done() {
                         Ok(Poll::Ready(Ok(0)))
                     } else {
-                        let value = Reflect::get(&object, &"value".into())?;
-                        let value = value.unchecked_into::<Uint8Array>().to_vec();
+                        let value = iterator_next.value().unchecked_into::<Uint8Array>().to_vec();
                         this.data = Cursor::new(value);
                         match this.inner.next() {
                             Ok(promise) => {
@@ -60,17 +59,22 @@ impl JsAsyncRead {
                         Ok(Poll::Pending)
                     }
                 },
-                Poll::Pending => {
-                    cx.waker().clone().wake();
-                    Ok(Poll::Pending)
-                },
+                Poll::Pending => Ok(Poll::Pending),
             }
         } else {
-            let amt = inner_buf.len();
+            let amt = std::cmp::min(inner_buf.len(), buf.len());
             buf.put_slice(&inner_buf[.. amt]);
             Pin::new(&mut this.data).consume(amt);
             Ok(Poll::Ready(Ok(amt)))
         }
+    }
+}
+
+impl TryFrom<AsyncIterator> for JsAsyncRead {
+    type Error = JsValue;
+
+    fn try_from(inner: AsyncIterator) -> Result<Self, JsValue> {
+        Self::new(inner)
     }
 }
 

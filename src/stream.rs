@@ -1,6 +1,7 @@
 use futures_core::{Future, Stream};
-use js_sys::{AsyncIterator, Boolean, Reflect};
+use js_sys::{AsyncIterator, IteratorNext};
 use std::{
+    convert::TryFrom,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -14,8 +15,8 @@ pub struct JsStream<T: Unpin + JsCast> {
 }
 
 impl<T: Unpin + JsCast> JsStream<T> {
-    pub fn new(inner: AsyncIterator) -> anyhow::Result<Self> {
-        let next = JsFuture::from(inner.next().map_err(AsyncReadableError)?);
+    pub fn new(inner: AsyncIterator) -> Result<Self, JsValue> {
+        let next = JsFuture::from(inner.next()?);
         let phantom = std::marker::PhantomData;
         Ok(Self { inner, next, phantom })
     }
@@ -26,13 +27,11 @@ impl<T: Unpin + JsCast> JsStream<T> {
         let status = next.poll(cx)?;
         match status {
             Poll::Ready(object) => {
-                let done = Reflect::get(&object, &"done".into())?;
-                let done = done.unchecked_into::<Boolean>().value_of();
-                if done {
+                let iterator_next = object.unchecked_into::<IteratorNext>();
+                if iterator_next.done() {
                     Ok(Poll::Ready(None))
                 } else {
-                    let value = Reflect::get(&object, &"value".into())?;
-                    let value = value.unchecked_into::<T>();
+                    let value = iterator_next.value().unchecked_into::<T>();
                     match this.inner.next() {
                         Ok(promise) => {
                             this.next = JsFuture::from(promise);
@@ -44,29 +43,17 @@ impl<T: Unpin + JsCast> JsStream<T> {
                     Ok(Poll::Ready(Some(value)))
                 }
             },
-            Poll::Pending => {
-                cx.waker().clone().wake();
-                Ok(Poll::Pending)
-            },
+            Poll::Pending => Ok(Poll::Pending),
         }
     }
 }
 
-#[derive(Clone, Debug)]
-struct AsyncReadableError(JsValue);
+impl<T: Unpin + JsCast> TryFrom<AsyncIterator> for JsStream<T> {
+    type Error = JsValue;
 
-unsafe impl Send for AsyncReadableError {
-}
-unsafe impl Sync for AsyncReadableError {
-}
-
-impl std::fmt::Display for AsyncReadableError {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(fmt, "{:?}", self.0)
+    fn try_from(inner: AsyncIterator) -> Result<Self, JsValue> {
+        Self::new(inner)
     }
-}
-
-impl std::error::Error for AsyncReadableError {
 }
 
 impl<T: Unpin + JsCast> Stream for JsStream<T> {
