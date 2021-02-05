@@ -9,7 +9,6 @@ on:
       - main
 
 jobs:
-  # skip ci if the last commit contains the appropriate tag
   skip-commit:
     name: Conditionally skip ci
     runs-on: ubuntu-latest
@@ -20,7 +19,6 @@ jobs:
           || contains(github.event.head_commit.message, '[ci skip]')"
         run: exit 78
 
-  # verify that Cargo.lock passes audit
   cargo-audit:
     name: Run cargo audit
     needs: [skip-commit]
@@ -46,7 +44,6 @@ jobs:
     - run: echo "${{ runner.tool_cache }}/cargo-audit/bin" >> $GITHUB_PATH
     - run: cargo audit
 
-  # verify that project passes clippy lints
   cargo-clippy:
     name: Run cargo clippy
     needs: [skip-commit]
@@ -64,7 +61,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-targets --workspace -- -D warnings
 
-  # build the documentation
   cargo-docs:
     name: Run cargo docs
     needs: [skip-commit]
@@ -90,7 +86,6 @@ jobs:
           publish_dir: ./target/doc
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-  # verify that code is formatted
   cargo-fmt:
     name: Run cargo fmt
     needs: [skip-commit]
