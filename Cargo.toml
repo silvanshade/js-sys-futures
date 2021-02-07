@@ -13,6 +13,11 @@ Utilities for working with the futures and js-sys crates.
 [badges]
 maintenance = { status = "experimental" }
 
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = "z"
+
 [dependencies]
 bytes = "1.0"
 futures-core = "0.3"
