@@ -148,4 +148,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: xtask
-          args: test
+          args: test -- --target wasm32-unknown-unknown
