@@ -10,8 +10,8 @@
     <a href="https://github.com/hvithrafn/js-sys-futures/actions"><img
         src="https://github.com/hvithrafn/js-sys-futures/workflows/main/badge.svg"
         /></a>
-    <a href="https://codecov.io/gh/hvithrafn/js-sys-futures"><img
+    <!-- <a href="https://codecov.io/gh/hvithrafn/js-sys-futures"><img
         src="https://codecov.io/gh/hvithrafn/js-sys-futures/branches/main/graph/badge.svg"
-        /></a>
+        /></a> -->
   </p>
 </div>
