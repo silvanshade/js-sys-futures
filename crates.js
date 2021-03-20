@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["js_sys_futures"];
