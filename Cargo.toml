@@ -2,10 +2,10 @@
 edition = "2018"
 name = "js-sys-futures"
 version = "0.3.3"
-authors = ["<hvithrafn@users.noreply.github.com>"]
+authors = ["<silvanshade@users.noreply.github.com>"]
 license = "Apache-2.0 WITH LLVM-exception"
 readme = "README.md"
-repository = "https://github.com/hvithrafn/js-sys-futures"
+repository = "https://github.com/silvanshade/js-sys-futures"
 description = """
 Utilities for working with the futures and js-sys crates.
 """
